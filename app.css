@@ -80,3 +80,9 @@ main{flex:1;overflow-y:auto;scrollbar-width:none}.loading{padding:2rem;color:var
 .story{width:390px;max-width:100%}.story .panel{margin-top:0}.toggle{font-size:.75rem;color:var(--muted);text-align:center;margin-top:.6rem}
 #reqlog{max-height:6.5rem}
 @media (max-width: 599px), (display-mode: standalone){.stage{padding:0;gap:0}}
+/* panel beside the phone on wide screens */
+@media (min-width: 900px){
+  .stage{flex-direction:row;align-items:center;justify-content:center;gap:2.5rem}
+  .story{width:300px}.story .panel{padding:1rem}.panel-head{flex-wrap:wrap}
+  #reqlog{max-height:22rem}.toggle{text-align:left}
+}

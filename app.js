@@ -28,7 +28,14 @@ const plain = async (path) => {
     else if (src?.startsWith('/')) img.src = `${BASE}${src}`;
   });
   // inline fragments, same as the web's auto-blocking of /fragments/* links
-  for (const a of [...doc.querySelectorAll('a[href*="/fragments/"]')]) {
+  // links ending in #_dnb stay links (same opt-out as the site's auto-blocking)
+  const links = [...doc.querySelectorAll('a[href*="/fragments/"]')].filter((a) => {
+    const href = a.getAttribute('href');
+    if (!href.includes('#_dnb')) return true;
+    a.setAttribute('href', href.replace('#_dnb', ''));
+    return false;
+  });
+  for (const a of links) {
     const frag = await plain(new URL(a.getAttribute('href'), ORIGIN).pathname);
     [...frag.querySelectorAll('[class]')].filter((el) => el.parentElement === frag.firstElementChild || el.parentElement?.parentElement === frag)
       .forEach((el) => { el.dataset.fragment = new URL(a.getAttribute('href'), ORIGIN).pathname; });

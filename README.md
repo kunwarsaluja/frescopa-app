@@ -10,7 +10,7 @@ A small installable web app (PWA) that shows **content reuse across channels**: 
 
 | App screen | EDS source |
 |---|---|
-| Home → featured offer | the campaign fragment marked `featured: true` in the `/campaigns.json` query index (none shown if no campaign is featured) |
+| Home → featured offer | the campaign fragment marked `featured: true` in the `/campaigns.json` query index (if none is featured, the most recently modified campaign) |
 | Offers | every campaign in `/campaigns.json`, then all offers from `/en/us/data/offers.json`; tapping an offer opens its page (`.plain.html`) |
 | Houses | sheet `/en/us/data/locations.json` |
 | Shop | sheet `/en/us/data/products.json` |

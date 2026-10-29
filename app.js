@@ -176,8 +176,9 @@ const tabs = {
       <div class="loyalty"><div><span>Circle · Gold</span><b>2,480</b><small>Velo points</small></div><div class="qr">▦</div></div>
       <div class="quick"><button data-go="offers">✦<span>Offers</span></button><button data-go="houses">📍<span>Houses</span></button><button data-go="events">🎟<span>Events</span></button><button data-go="help">💬<span>Help</span></button></div>
     </div>`));
-    // EDS content: the one campaign marked featured=true in the campaigns query index
-    const featured = (await campaignList()).find((c) => String(c.featured).toLowerCase() === 'true');
+    // EDS content: the campaign marked featured=true, else the most recently modified one
+    const list = await campaignList();
+    const featured = list.find((c) => String(c.featured).toLowerCase() === 'true') || list[0];
     if (featured) {
       f.append(h('<h2 class="label">Featured offer · from AEM</h2>'));
       f.append(renderPage(await campaignFragment(featured.path)));

@@ -173,14 +173,14 @@ const tabs = {
     // app-owned content (lives in the app)
     f.append(h(`<div class="app-native fade" data-src="app (native)">
       <p class="hello">Good morning, Alex</p>
-      <div class="loyalty"><div><span>Circle · Gold</span><b>2,480</b><small>Velo points</small></div><div class="qr">▦</div></div>
-      <div class="quick"><button data-go="offers">✦<span>Offers</span></button><button data-go="houses">📍<span>Houses</span></button><button data-go="events">🎟<span>Events</span></button><button data-go="help">💬<span>Help</span></button></div>
+      <div class="loyalty"><div><span>Frescopa Circle</span><b>2,480</b><small>Velo points</small></div><div class="tier">Gold</div></div>
+      <div class="quick"><button data-go="offers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg><span>Offers</span></button><button data-go="houses"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>Houses</span></button><button data-go="events"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><span>Events</span></button><button data-go="help"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></svg><span>Help</span></button></div>
     </div>`));
     // EDS content: the campaign marked featured=true, else the most recently modified one
     const list = await campaignList();
     const featured = list.find((c) => String(c.featured).toLowerCase() === 'true') || list[0];
     if (featured) {
-      f.append(h('<h2 class="label">Featured offer · from AEM</h2>'));
+      f.append(h('<h2 class="label">Featured</h2>'));
       f.append(renderPage(await campaignFragment(featured.path)));
     }
     return f;
@@ -190,11 +190,13 @@ const tabs = {
     const { data } = await json(`${LOCALE}/data/offers.json`);
     const campaigns = await campaignList();
     const f = document.createDocumentFragment();
-    f.append(h(`<div class="screen-title fade"><h1>Offers</h1><p>${campaigns.length} campaigns · ${data.length} offers</p></div>`));
+    f.append(h(`<div class="screen-title fade"><h1>Offers</h1><p>${campaigns.length + data.length} ways to save right now</p></div>`));
     if (campaigns.length) {
-      f.append(h('<h2 class="label">Campaigns · from campaigns.json</h2>'));
-      (await Promise.all(campaigns.map((c) => campaignFragment(c.path)))).forEach((fr) => f.append(renderPage(fr)));
-      f.append(h('<h2 class="label">All offers · from offers.json</h2>'));
+      f.append(h('<h2 class="label">Campaigns</h2>'));
+      const rail = h('<div class="camprail"></div>');
+      (await Promise.all(campaigns.map((c) => campaignFragment(c.path)))).forEach((fr) => rail.append(renderPage(fr)));
+      f.append(rail);
+      f.append(h('<h2 class="label">All offers</h2>'));
     }
     const wrap = h('<div class="offers fade" data-src="sheet /en/us/data/offers.json"></div>');
     data.forEach((o) => wrap.append(h(`<article class="offer ${o.featured === 'true' ? 'feat' : ''}" data-offer="${o.url}">

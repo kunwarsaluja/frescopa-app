@@ -86,3 +86,39 @@ main{flex:1;overflow-y:auto;scrollbar-width:none}.loading{padding:2rem;color:var
   .story{width:300px}.story .panel{padding:1rem}.panel-head{flex-wrap:wrap}
   #reqlog{max-height:22rem}.toggle{text-align:left}
 }
+
+/* ---- polish ---- */
+.bar{padding-bottom:.4rem}.avatar{margin-left:auto;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.8rem;color:#fff;background:linear-gradient(135deg,var(--flame),var(--aurora))}
+.hello{font-size:1.5rem;margin:.4rem 0 1rem}
+.loyalty{padding:1.1rem 1.2rem;background:radial-gradient(120% 140% at 100% 0%,#6b4cf555,transparent 60%),var(--ink)}
+.tier{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:.35rem .7rem;border-radius:99px;background:#d8ff3a;color:var(--ink)}
+.quick{gap:.6rem;margin-top:1rem}.quick button{padding:.8rem 0 .7rem;gap:.35rem;background:var(--sand)}
+.quick svg,.tabs svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.quick svg{color:var(--flame)}.quick span{font-size:.68rem;color:var(--ink)}
+.tabs button{gap:.25rem;font-size:.65rem}.tabs button.on svg{stroke-width:2.2}
+.label{font-size:.72rem;letter-spacing:.14em;color:var(--muted);margin:1.6rem 1.2rem .6rem}
+/* campaign card: image on top, copy on ink below (readable on any image) */
+.hero{flex-direction:column;align-items:stretch;min-height:0;margin:0 1.2rem;border-radius:24px;background:var(--ink);box-shadow:0 18px 40px -22px #15131c88}
+.hero img{position:static;aspect-ratio:16/9;height:auto}
+.hero::after{display:none}
+.hero .txt{padding:1.1rem 1.2rem 1.3rem}.hero .eyebrow{color:#ff8a5c;opacity:1}
+.hero h1{font-size:1.6rem;margin:.35rem 0 .5rem}.hero h1 em{color:#d8ff3a}
+.hero .txt>p:not(.eyebrow){font-size:.8rem;line-height:1.5;opacity:.8;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.cta{margin-top:.9rem;padding:.7rem 1.2rem}
+.perks{margin-top:1rem;gap:.5rem;flex-wrap:nowrap}.perks span{flex:1;background:#ffffff14;backdrop-filter:none;padding:.55rem .6rem;font-size:.62rem;line-height:1.25;opacity:.85}
+.perks b{font-size:1rem;color:#fff;margin-bottom:.1rem}
+.hero + .label,.sec + .label{margin-top:1.8rem}
+.hero ~ .hero{margin-top:1rem}
+/* offers list */
+.screen-title{padding:.4rem 1.2rem .2rem}.screen-title h1{font-size:2rem}
+.offers{gap:.9rem}.offer{padding:1rem 1.1rem;border:1px solid #15131c0d}
+.ofimg{margin:-1rem -1.1rem .9rem;width:calc(100% + 2.2rem);aspect-ratio:2/1}
+.offer.feat{background:var(--ink);color:#fff}.offer.feat .badge{background:#d8ff3a;color:var(--ink)}
+.offer .price{border-top:1px solid #15131c14;padding-top:.7rem;margin-top:.8rem}.offer.feat .price{border-color:#ffffff22}
+.offer .price span{font-size:1.1rem;color:var(--flame)}
+
+.camprail{display:flex;gap:.8rem;overflow-x:auto;scroll-snap-type:x mandatory;padding:0 1.2rem .4rem;scrollbar-width:none}
+.camprail .hero{flex:0 0 86%;margin:0;scroll-snap-align:center}.camprail .hero ~ .hero{margin-top:0}
+.camprail .hero h1{font-size:1.3rem}.camprail .hero .txt>p:not(.eyebrow){-webkit-line-clamp:2}
+.offers{padding-top:.2rem}
+.ofimg{aspect-ratio:5/2}

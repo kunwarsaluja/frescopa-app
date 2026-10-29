@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Book a visit</title>
+<style>html,body{margin:0;background:#fff}</style>
+<script type="module">
+  // Hosts the site's booking block via aem-embed inside the app's booking sheet.
+  // Rendered in its own frame so the block lays out for the sheet's width.
+  const params = new URLSearchParams(location.search);
+  const origin = params.get('origin');
+  const fonts = document.createElement('link');
+  fonts.rel = 'stylesheet';
+  fonts.href = `${origin}/styles/fonts.css`;
+  document.head.append(fonts);
+  const embed = document.createElement('aem-embed');
+  embed.setAttribute('url', `${origin}${params.get('path')}`);
+  embed.dataset.query = params.get('query') || '';
+  document.body.append(embed);
+  await import(`${origin}/scripts/aem-embed.js`);
+</script>
+</head>
+<body></body>
+</html>

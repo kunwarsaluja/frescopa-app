@@ -8,6 +8,9 @@ const BASE = DIRECT ? ORIGIN : '/eds';
 // sheet media paths (/media/x.jpg) are redirects that currently resolve on preview only
 const MEDIA = DIRECT ? ORIGIN.replace('.aem.live', '.aem.page') : '/edspage';
 const media = (p) => (p ? (p.startsWith('http') ? p : `${MEDIA}${p}`) : '');
+// Site that serves embeddable blocks (aem-embed). ?site= points it at another
+// environment, e.g. a feature branch or a local `aem up` during development.
+const SITE = new URLSearchParams(location.search).get('site') || ORIGIN;
 const LOCALE = '/en/us';
 const view = document.getElementById('view');
 const backBtn = document.getElementById('back');
@@ -146,11 +149,26 @@ async function show(builder, push = true) {
   view.innerHTML = ''; view.append(node); view.scrollTop = 0;
   refreshLog();
 }
+function openBooking(query = '') {
+  const screen = document.getElementById('screen');
+  screen.querySelector('.sheet')?.remove();
+  const src = `book.html?${new URLSearchParams({ origin: SITE, path: `${LOCALE}/booking`, query: query.replace(/^\?/, '') })}`;
+  const sheet = h(`<div class="sheet" role="dialog" aria-modal="true" aria-label="Book a visit">
+    <div class="sheet-scrim"></div>
+    <div class="sheet-panel"><div class="sheet-bar"><span class="grip"></span><button class="sheet-close" aria-label="Close">✕</button></div>
+    <iframe title="Book a visit" src="${src}"></iframe></div></div>`);
+  const close = () => { sheet.classList.add('closing'); setTimeout(() => sheet.remove(), 250); };
+  sheet.querySelector('.sheet-scrim').onclick = close;
+  sheet.querySelector('.sheet-close').onclick = close;
+  screen.append(sheet);
+}
+
 const open = (href) => {
   if (!href) return;
   const u = new URL(href, ORIGIN);
   if (u.origin !== ORIGIN) return window.open(href);
   const p = u.pathname;
+  if (p === `${LOCALE}/booking`) { openBooking(u.search); return; }
   show(async () => (p.includes('/offers/') ? renderPage(await plain(p)) : article(await plain(p), p)));
 };
 

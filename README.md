@@ -20,6 +20,12 @@ A small installable web app (PWA) that shows **content reuse across channels**: 
 
 Greeting, points card and quick actions are app-owned (not from EDS).
 
+### Booking with aem-embed
+
+Every link to `/en/us/booking` (House rows, "Start your free trial", events) opens a **Book a visit** sheet. The sheet doesn't rebuild the form: it shows the site's own `booking` block through [aem-embed](https://www.aem.live/docs/aem-embed), so steps, options, validation and consent text are authored in DA and styled by the site. Prefill values (`location`, `experience`) are passed to the block through the embed host's `data-query`.
+
+`book.html` hosts the embed in its own frame so the block lays out for the sheet's width. Append `?site=<origin>` to the app URL to embed from another environment (for example a branch preview or a local `aem up` on `http://localhost:3000`).
+
 The app reads `.plain.html` (pages and fragments without site chrome) and JSON sheets, then maps EDS blocks (`hero`, `campaign`, `cards`, `events`, `stats`, `offer-summary`, `faq`…) to native-style components. Turn on **X-ray** on desktop to see which block or sheet each component came from.
 
 The site sends `Access-Control-Allow-Origin: *`, so the app calls EDS directly from the browser.

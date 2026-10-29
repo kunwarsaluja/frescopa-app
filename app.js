@@ -163,11 +163,26 @@ const tabs = {
       <div class="loyalty"><div><span>Circle · Gold</span><b>2,480</b><small>Velo points</small></div><div class="qr">▦</div></div>
       <div class="quick"><button data-go="offers">✦<span>Offers</span></button><button data-go="houses">📍<span>Houses</span></button><button data-go="events">🎟<span>Events</span></button><button data-go="help">💬<span>Help</span></button></div>
     </div>`));
-    // EDS content: the same offers fragment the website homepage embeds
-    f.append(h('<h2 class="label">Featured offer · from AEM</h2>'));
-    const frag = await plain(`${LOCALE}/fragments/campaigns/member-week-nov39`);
-    frag.querySelectorAll('[class]').forEach((el) => { el.dataset.fragment = `${LOCALE}/fragments/campaigns/member-week-nov39`; });
-    f.append(renderPage(frag));
+    // EDS content: campaign fragments listed in the campaigns query index.
+    // The one with featured=true leads; the rest follow. Falls back to Member Week.
+    const FALLBACK = `${LOCALE}/fragments/campaigns/member-week-nov39`;
+    let campaigns = [];
+    try { campaigns = (await json('/campaigns.json')).data || []; } catch { /* index not built yet */ }
+    campaigns = campaigns.filter((c) => c.path?.startsWith(`${LOCALE}/`));
+    const isFeatured = (c) => String(c.featured).toLowerCase() === 'true';
+    campaigns.sort((x, y) => isFeatured(y) - isFeatured(x) || (y.lastModified || 0) - (x.lastModified || 0));
+    const paths = campaigns.length ? campaigns.map((c) => c.path) : [FALLBACK];
+    const frags = await Promise.all(paths.map(async (p) => {
+      const frag = await plain(p);
+      frag.querySelectorAll('[class]').forEach((el) => { el.dataset.fragment = p; });
+      return frag;
+    }));
+    f.append(h(`<h2 class="label">Featured offer · from AEM</h2>`));
+    f.append(renderPage(frags[0]));
+    if (frags.length > 1) {
+      f.append(h(`<h2 class="label">More campaigns</h2>`));
+      frags.slice(1).forEach((fr) => f.append(renderPage(fr)));
+    }
     return f;
   },
   offers: async () => {

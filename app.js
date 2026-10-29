@@ -167,12 +167,18 @@ async function campaignFragment(path) {
   return frag;
 }
 
+const greeting = () => {
+  const hr = new Date().getHours();
+  if (hr < 12) return 'Good morning';
+  return hr < 18 ? 'Good afternoon' : 'Good evening';
+};
+
 const tabs = {
   home: async () => {
     const f = document.createDocumentFragment();
     // app-owned content (lives in the app)
     f.append(h(`<div class="app-native fade" data-src="app (native)">
-      <p class="hello">Good morning, Alex</p>
+      <p class="hello">${greeting()}, Alex</p>
       <div class="loyalty"><div><span>Frescopa Circle</span><b>2,480</b><small>Velo points</small></div><div class="tier">Gold</div></div>
       <div class="quick"><button data-go="offers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg><span>Offers</span></button><button data-go="houses"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>Houses</span></button><button data-go="events"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><span>Events</span></button><button data-go="help"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></svg><span>Help</span></button></div>
     </div>`));
@@ -187,13 +193,17 @@ const tabs = {
   },
   offers: async () => {
     // same sheet the website's catalog block reads: /en/us/data/offers.json
-    const { data } = await json(`${LOCALE}/data/offers.json`);
+    const now = Date.now();
+    const data = (await json(`${LOCALE}/data/offers.json`)).data
+      .filter((o) => !o.end || new Date(o.end).getTime() >= now)
+      .sort((x, y) => (x.featured === 'true' ? -1 : 0) - (y.featured === 'true' ? -1 : 0)
+        || new Date(x.end || 8.64e15) - new Date(y.end || 8.64e15));
     const f = document.createDocumentFragment();
-    f.append(h(`<div class="screen-title fade"><h1>Offers</h1><p>${data.length} ways to save right now</p></div>`));
+    f.append(h(`<div class="screen-title fade"><h1>Offers</h1><p>${data.length} ${data.length === 1 ? 'offer' : 'offers'} available</p></div>`));
     const wrap = h('<div class="offers fade" data-src="sheet /en/us/data/offers.json"></div>');
     data.forEach((o) => wrap.append(h(`<article class="offer ${o.featured === 'true' ? 'feat' : ''}" data-offer="${o.url}">
       ${o.image ? `<img class="ofimg" loading="lazy" src="${media(o.image)}" alt="" onerror="this.remove()">` : ''}
-      <div class="top"><span class="badge">${esc(o.badge)}</span><span class="aud">${esc(o.audience)}</span></div>
+      <div class="top">${o.badge ? `<span class="badge">${esc(o.badge)}</span>` : '<span></span>'}<span class="aud">${esc(o.audience)}</span></div>
       <h3>${esc(o.title)}</h3><p>${esc(o.summary)}</p>
       <div class="price">${esc(o.priceLabel)}<small>${esc(o.period)}</small><span>›</span></div></article>`)));
     f.append(wrap);
@@ -202,7 +212,7 @@ const tabs = {
   shop: async () => {
     const { data } = await json(`${LOCALE}/data/products.json`);
     const f = document.createDocumentFragment();
-    f.append(h(`<div class="screen-title fade"><h1>Shop</h1><p>${data.length} plans & products · from products.json</p></div>`));
+    f.append(h(`<div class="screen-title fade"><h1>Shop</h1><p>${data.length} plans and products</p></div>`));
     const wrap = h('<div class="offers fade" data-src="sheet /en/us/data/products.json"></div>');
     data.forEach((o, i) => wrap.append(h(`<article class="offer ${i === 0 ? 'feat' : ''}" data-href="${o.url}">
       ${o.image ? `<img class="ofimg" loading="lazy" src="${media(o.image)}" alt="" onerror="this.remove()">` : ''}
@@ -216,8 +226,8 @@ const tabs = {
   houses: async () => {
     const { data } = await json(`${LOCALE}/data/locations.json`);
     const f = document.createDocumentFragment();
-    f.append(h(`<div class="screen-title fade"><h1>Frescopa Houses</h1><p>${data.length} locations · from locations.json</p></div>`));
-    f.append(list('', data.map((l) => ({ title: l.name, desc: `${l.street}, ${l.city} · ${l.hours} · ${l.services}`, badge: l.state || '◎', href: `${LOCALE}/booking` })), 'sheet /en/us/data/locations.json'));
+    f.append(h(`<div class="screen-title fade"><h1>Frescopa Houses</h1><p>${data.length} locations</p></div>`));
+    f.append(list('', data.map((l) => ({ title: l.name, desc: `${l.street}, ${l.city} · ${l.hours} · ${l.services}`, badge: l.state || '◎', href: `${LOCALE}/booking?location=${encodeURIComponent(l.id)}` })), 'sheet /en/us/data/locations.json'));
     return f;
   },
   events: async () => renderPage(await plain(`${LOCALE}/experiences`)),

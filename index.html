@@ -12,22 +12,6 @@
 <link rel="stylesheet" href="app.css"></head>
 <body>
 <div class="stage">
-  <section class="story">
-    <p class="kicker">Omnichannel activation</p>
-    <h1>One source.<br><em>Every channel.</em></h1>
-    <p>The phone on the right is a native-style Frescopa app. It has no CMS of its own: the featured offer and every other headline, image and story is pulled live from the same AEM Edge Delivery pages that power <a id="site-link" target="_blank">the website</a>.</p>
-    <ol class="flow">
-      <li><b>Author</b> edits a page in Document Authoring</li>
-      <li><b>Publish</b> once to Edge Delivery</li>
-      <li><b>Web</b> renders it as HTML blocks</li>
-      <li><b>App</b> reads <code>.plain.html</code> + <code>query-index.json</code> and renders native UI</li>
-    </ol>
-    <div class="panel">
-      <div class="panel-head"><span class="dot"></span> Live content requests from the app <button id="refresh">↻ Sync now</button></div>
-      <ul id="reqlog"></ul>
-    </div>
-    <label class="toggle"><input type="checkbox" id="xray"> X-ray: show which EDS block each app component came from</label>
-  </section>
   <div class="phone"><div class="notch"></div>
     <div class="screen" id="screen">
       <header class="bar"><button id="back" class="back" hidden aria-label="Back">‹</button><span class="logo">frescopa</span><span class="status" id="status">●</span></header>
@@ -40,6 +24,13 @@
       </nav>
     </div>
   </div>
+<section class="story">
+    <div class="panel">
+      <div class="panel-head"><span class="dot"></span> Live content requests from the app <button id="refresh">↻ Sync now</button></div>
+      <ul id="reqlog"></ul>
+    </div>
+    <label class="toggle"><input type="checkbox" id="xray"> X-ray: show content sources</label>
+  </section>
 </div>
 <script type="module" src="app.js"></script>
 </body></html>

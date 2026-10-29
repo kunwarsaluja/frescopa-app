@@ -11,8 +11,6 @@ const media = (p) => (p ? (p.startsWith('http') ? p : `${MEDIA}${p}`) : '');
 const LOCALE = '/en/us';
 const view = document.getElementById('view');
 const backBtn = document.getElementById('back');
-document.getElementById('site-link').href = `${ORIGIN}${LOCALE}/`;
-document.getElementById('site-link').textContent = new URL(ORIGIN).host;
 const stack = [];
 
 const plain = async (path) => {

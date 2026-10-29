@@ -38,7 +38,7 @@ open http://localhost:4321
 
 ## Desktop vs phone
 
-- Desktop: demo layout with the story panel, live request log and a phone frame.
+- Desktop: phone frame with the live request log, Sync now and X-ray underneath.
 - Phone or installed (Add to Home Screen): full-screen app. A service worker caches the app shell; EDS content is always fetched fresh (network-first, cached copy only when offline).
 
 ## Hosting

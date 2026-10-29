@@ -152,7 +152,7 @@ async function show(builder, push = true) {
 function openBooking(query = '') {
   const screen = document.getElementById('screen');
   screen.querySelector('.sheet')?.remove();
-  const src = `book.html?${new URLSearchParams({ origin: SITE, path: `${LOCALE}/booking`, query: query.replace(/^\?/, '') })}`;
+  const src = `book.html?${new URLSearchParams({ origin: SITE, path: `${LOCALE}/fragments/booking-experience`, query: query.replace(/^\?/, '') })}`;
   const sheet = h(`<div class="sheet" role="dialog" aria-modal="true" aria-label="Book a visit">
     <div class="sheet-scrim"></div>
     <div class="sheet-panel"><div class="sheet-bar"><span class="grip"></span><button class="sheet-close" aria-label="Close">✕</button></div>

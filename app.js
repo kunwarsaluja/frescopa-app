@@ -154,6 +154,19 @@ const open = (href) => {
   show(async () => (p.includes('/offers/') ? renderPage(await plain(p)) : article(await plain(p), p)));
 };
 
+// campaigns query index (/campaigns.json): every campaign fragment for this locale, newest first
+async function campaignList() {
+  try {
+    const { data = [] } = await json('/campaigns.json');
+    return data.filter((c) => c.path?.startsWith(`${LOCALE}/`)).sort((x, y) => (y.lastModified || 0) - (x.lastModified || 0));
+  } catch { return []; }
+}
+async function campaignFragment(path) {
+  const frag = await plain(path);
+  frag.querySelectorAll('[class]').forEach((el) => { el.dataset.fragment = path; });
+  return frag;
+}
+
 const tabs = {
   home: async () => {
     const f = document.createDocumentFragment();
@@ -163,33 +176,25 @@ const tabs = {
       <div class="loyalty"><div><span>Circle · Gold</span><b>2,480</b><small>Velo points</small></div><div class="qr">▦</div></div>
       <div class="quick"><button data-go="offers">✦<span>Offers</span></button><button data-go="houses">📍<span>Houses</span></button><button data-go="events">🎟<span>Events</span></button><button data-go="help">💬<span>Help</span></button></div>
     </div>`));
-    // EDS content: campaign fragments listed in the campaigns query index.
-    // The one with featured=true leads; the rest follow. Falls back to Member Week.
-    const FALLBACK = `${LOCALE}/fragments/campaigns/member-week-nov39`;
-    let campaigns = [];
-    try { campaigns = (await json('/campaigns.json')).data || []; } catch { /* index not built yet */ }
-    campaigns = campaigns.filter((c) => c.path?.startsWith(`${LOCALE}/`));
-    const isFeatured = (c) => String(c.featured).toLowerCase() === 'true';
-    campaigns.sort((x, y) => isFeatured(y) - isFeatured(x) || (y.lastModified || 0) - (x.lastModified || 0));
-    const paths = campaigns.length ? campaigns.map((c) => c.path) : [FALLBACK];
-    const frags = await Promise.all(paths.map(async (p) => {
-      const frag = await plain(p);
-      frag.querySelectorAll('[class]').forEach((el) => { el.dataset.fragment = p; });
-      return frag;
-    }));
-    f.append(h(`<h2 class="label">Featured offer · from AEM</h2>`));
-    f.append(renderPage(frags[0]));
-    if (frags.length > 1) {
-      f.append(h(`<h2 class="label">More campaigns</h2>`));
-      frags.slice(1).forEach((fr) => f.append(renderPage(fr)));
+    // EDS content: the one campaign marked featured=true in the campaigns query index
+    const featured = (await campaignList()).find((c) => String(c.featured).toLowerCase() === 'true');
+    if (featured) {
+      f.append(h('<h2 class="label">Featured offer · from AEM</h2>'));
+      f.append(renderPage(await campaignFragment(featured.path)));
     }
     return f;
   },
   offers: async () => {
     // same sheet the website's catalog block reads: /en/us/data/offers.json
     const { data } = await json(`${LOCALE}/data/offers.json`);
+    const campaigns = await campaignList();
     const f = document.createDocumentFragment();
-    f.append(h(`<div class="screen-title fade"><h1>Offers</h1><p>${data.length} live offers · from offers.json</p></div>`));
+    f.append(h(`<div class="screen-title fade"><h1>Offers</h1><p>${campaigns.length} campaigns · ${data.length} offers</p></div>`));
+    if (campaigns.length) {
+      f.append(h('<h2 class="label">Campaigns · from campaigns.json</h2>'));
+      (await Promise.all(campaigns.map((c) => campaignFragment(c.path)))).forEach((fr) => f.append(renderPage(fr)));
+      f.append(h('<h2 class="label">All offers · from offers.json</h2>'));
+    }
     const wrap = h('<div class="offers fade" data-src="sheet /en/us/data/offers.json"></div>');
     data.forEach((o) => wrap.append(h(`<article class="offer ${o.featured === 'true' ? 'feat' : ''}" data-offer="${o.url}">
       ${o.image ? `<img class="ofimg" loading="lazy" src="${media(o.image)}" alt="" onerror="this.remove()">` : ''}

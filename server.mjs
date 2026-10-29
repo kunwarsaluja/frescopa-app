@@ -24,5 +24,10 @@ http.createServer(async (req, res) => {
     const body = await readFile(new URL(f, import.meta.url));
     const type = f.endsWith('.html') ? 'text/html' : f.endsWith('.js') ? 'text/javascript' : f.endsWith('.css') ? 'text/css' : 'application/octet-stream';
     res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store' }); res.end(body);
-  } catch { res.writeHead(404); res.end('not found'); }
+  } catch {
+    // unknown local path: forward to EDS (lets aem-embed resolve /scripts, /blocks, /media_* same-origin)
+    const r = await fetch(ORIGIN + req.url);
+    res.writeHead(r.status, { 'content-type': r.headers.get('content-type') || 'application/octet-stream', 'cache-control': 'no-store' });
+    res.end(Buffer.from(await r.arrayBuffer()));
+  }
 }).listen(PORT, () => console.log(`Frescopa app on http://localhost:${PORT}  (content from ${ORIGIN})`));

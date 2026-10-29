@@ -2,6 +2,7 @@
 
 A small installable web app (PWA) that shows **content reuse across channels**: everything it displays comes live from the Frescopa site on [AEM Edge Delivery Services](https://www.aem.live/), with no CMS of its own.
 
+- **App: https://kunwarsaluja.github.io/frescopa-app/** (open on a phone and use Add to Home Screen to install)
 - Site: https://main--frescopa--kunwarsaluja.aem.live/en/us/
 - Site repo: [kunwarsaluja/frescopa](https://github.com/kunwarsaluja/frescopa)
 

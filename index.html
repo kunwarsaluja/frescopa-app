@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Frescopa App · powered by AEM Edge Delivery (headless)</title>
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Frescopa">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="preload" href="fonts/montserrat.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="app.css"></head>
+<body>
+<div class="stage">
+  <section class="story">
+    <p class="kicker">Omnichannel activation</p>
+    <h1>One source.<br><em>Every channel.</em></h1>
+    <p>The phone on the right is a native-style Frescopa app. It has no CMS of its own: the featured offer and every other headline, image and story is pulled live from the same AEM Edge Delivery pages that power <a id="site-link" target="_blank">the website</a>.</p>
+    <ol class="flow">
+      <li><b>Author</b> edits a page in Document Authoring</li>
+      <li><b>Publish</b> once to Edge Delivery</li>
+      <li><b>Web</b> renders it as HTML blocks</li>
+      <li><b>App</b> reads <code>.plain.html</code> + <code>query-index.json</code> and renders native UI</li>
+    </ol>
+    <div class="panel">
+      <div class="panel-head"><span class="dot"></span> Live content requests from the app <button id="refresh">↻ Sync now</button></div>
+      <ul id="reqlog"></ul>
+    </div>
+    <label class="toggle"><input type="checkbox" id="xray"> X-ray: show which EDS block each app component came from</label>
+  </section>
+  <div class="phone"><div class="notch"></div>
+    <div class="screen" id="screen">
+      <header class="bar"><button id="back" class="back" hidden aria-label="Back">‹</button><span class="logo">frescopa</span><span class="status" id="status">●</span></header>
+      <main id="view"><div class="loading">Brewing something fresh…</div></main>
+      <nav class="tabs" id="tabs">
+        <button data-tab="home" class="on"><span>⌂</span>Home</button>
+        <button data-tab="offers"><span>✦</span>Offers</button>
+        <button data-tab="shop"><span>◎</span>Shop</button>
+        <button data-tab="circle"><span>◇</span>Circle</button>
+      </nav>
+    </div>
+  </div>
+</div>
+<script type="module" src="app.js"></script>
+</body></html>

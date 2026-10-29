@@ -188,16 +188,8 @@ const tabs = {
   offers: async () => {
     // same sheet the website's catalog block reads: /en/us/data/offers.json
     const { data } = await json(`${LOCALE}/data/offers.json`);
-    const campaigns = await campaignList();
     const f = document.createDocumentFragment();
-    f.append(h(`<div class="screen-title fade"><h1>Offers</h1><p>${campaigns.length + data.length} ways to save right now</p></div>`));
-    if (campaigns.length) {
-      f.append(h('<h2 class="label">Campaigns</h2>'));
-      const rail = h('<div class="camprail"></div>');
-      (await Promise.all(campaigns.map((c) => campaignFragment(c.path)))).forEach((fr) => rail.append(renderPage(fr)));
-      f.append(rail);
-      f.append(h('<h2 class="label">All offers</h2>'));
-    }
+    f.append(h(`<div class="screen-title fade"><h1>Offers</h1><p>${data.length} ways to save right now</p></div>`));
     const wrap = h('<div class="offers fade" data-src="sheet /en/us/data/offers.json"></div>');
     data.forEach((o) => wrap.append(h(`<article class="offer ${o.featured === 'true' ? 'feat' : ''}" data-offer="${o.url}">
       ${o.image ? `<img class="ofimg" loading="lazy" src="${media(o.image)}" alt="" onerror="this.remove()">` : ''}

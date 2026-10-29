@@ -149,26 +149,30 @@ async function show(builder, push = true) {
   view.innerHTML = ''; view.append(node); view.scrollTop = 0;
   refreshLog();
 }
-function openBooking(query = '') {
+// Opens a site fragment (e.g. a booking flow) in a bottom sheet via aem-embed.
+function openSheet(path, query = '', label = '') {
   const screen = document.getElementById('screen');
   screen.querySelector('.sheet')?.remove();
-  const src = `book.html?${new URLSearchParams({ origin: SITE, path: `${LOCALE}/fragments/booking-experience`, query: query.replace(/^\?/, '') })}`;
-  const sheet = h(`<div class="sheet" role="dialog" aria-modal="true" aria-label="Book a visit">
+  const src = `book.html?${new URLSearchParams({ origin: SITE, path, query: query.replace(/^\?/, '') })}`;
+  const sheet = h(`<div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(label)}">
     <div class="sheet-scrim"></div>
     <div class="sheet-panel"><div class="sheet-bar"><span class="grip"></span><button class="sheet-close" aria-label="Close">✕</button></div>
-    <iframe title="Book a visit" src="${src}"></iframe></div></div>`);
+    <iframe title="${esc(label)}" src="${src}"></iframe></div></div>`);
   const close = () => { sheet.classList.add('closing'); setTimeout(() => sheet.remove(), 250); };
   sheet.querySelector('.sheet-scrim').onclick = close;
   sheet.querySelector('.sheet-close').onclick = close;
   screen.append(sheet);
 }
 
-const open = (href) => {
+const open = (href, label = '') => {
   if (!href) return;
   const u = new URL(href, ORIGIN);
   if (u.origin !== ORIGIN) return window.open(href);
   const p = u.pathname;
-  if (p === `${LOCALE}/booking`) { openBooking(u.search); return; }
+  // the booking page's form lives in a fragment; other fragment links (e.g. a campaign's
+  // sign-up flow) open the same way, like the site's modal does on the web
+  if (p === `${LOCALE}/booking`) { openSheet(`${LOCALE}/fragments/booking-experience`, u.search, label); return; }
+  if (p.startsWith(`${LOCALE}/fragments/`)) { openSheet(p, u.search, label); return; }
   show(async () => (p.includes('/offers/') ? renderPage(await plain(p)) : article(await plain(p), p)));
 };
 
@@ -270,7 +274,7 @@ document.getElementById('tabs').addEventListener('click', (e) => {
 view.addEventListener('click', (e) => {
   const go = e.target.closest('[data-go]'); if (go) { show(tabs[go.dataset.go]); return; }
   const off = e.target.closest('[data-offer]'); if (off) { const p = off.dataset.offer; show(async () => renderPage(await plain(p))); return; }
-  const t = e.target.closest('[data-href]'); if (t?.dataset.href) open(t.dataset.href);
+  const t = e.target.closest('[data-href]'); if (t?.dataset.href) open(t.dataset.href, t.textContent.trim());
 });
 backBtn.onclick = () => { stack.pop(); show(stack[stack.length - 1], false); };
 document.getElementById('xray').onchange = (e) => document.getElementById('screen').classList.toggle('xray', e.target.checked);

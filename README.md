@@ -32,6 +32,22 @@ The site sends `Access-Control-Allow-Origin: *`, so the app calls EDS directly f
 
 Known gap: sheet image paths like `/media/com-sun.jpg` are redirects that resolve only on `.aem.page` today, so those images load from preview.
 
+## Authoring the app (no deploy needed)
+
+The app's structure is a sheet in DA: [`/en/us/data/app.json`](https://da.live/sheet#/kunwarsaluja/frescopa/en/us/data/app). Edit it, then Preview and Publish; the app picks it up on the next load or **Sync now**. Sheet tabs must be named `shared-…` for EDS to publish them.
+
+| Tab | Columns | What it controls |
+|---|---|---|
+| `shared-screens` | screen, type, title, subtitle, source, item link | What each screen shows. `type` is one of `home`, `offers`, `products`, `locations`, `page`. `source` is the sheet, index or page it reads. `subtitle` can use `{n}` (item count). `item link` can use row fields, e.g. `/en/us/booking?location={id}` |
+| `shared-tabs` | label, screen, icon | Bottom tabs, in order |
+| `shared-actions` | label, link, icon | Home quick actions. `link` is a screen id or any site path or fragment |
+| `shared-links` | link, opens | Site paths the app opens differently, e.g. `/en/us/booking` → `/en/us/fragments/booking-experience` |
+| `shared-labels` | key, text | UI text: `featured`, `greeting-morning`, `greeting-afternoon`, `greeting-evening`, `loading`, `synced`, `back`, `close` |
+
+Icons: `home`, `tag`, `bag`, `person`, `pin`, `calendar`, `chat`, `star`, `gift`.
+
+Examples of authoring changes: point Help at another page, add a "Book a visit" quick action (`link`: `/en/us/booking`), rename a tab, reorder tabs, show a new page as a screen. A new screen **type** (a new layout) is the only thing that needs a code change.
+
 ## Run locally
 
 No build step, no dependencies.

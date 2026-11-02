@@ -148,47 +148,80 @@ function article(body, path) {
   return wrap;
 }
 
+// ---- app settings, authored in DA as a sheet: /<locale>/data/app.json ----
+// screens: what each screen shows and where its content comes from
+// tabs / actions: bottom tabs and Home quick actions (label, screen or link, icon)
+// links: site paths the app opens differently (e.g. the booking page → its booking fragment)
+// labels: UI text
+let settings;
+const label = (key) => settings.labels[key] || '';
+const fill = (template, values) => String(template || '').replace(/\{(\w+)\}/g, (_, k) => encodeURIComponent(values[k] ?? ''));
+
+async function loadSettings() {
+  const sheet = await json(`${LOCALE}/data/app.json`);
+  // published multi-sheets keep the shared- prefix EDS requires on sheet names
+  const rows = (name) => sheet[`shared-${name}`]?.data || [];
+  settings = {
+    screens: Object.fromEntries(rows('screens').map((s) => [s.screen, s])),
+    tabs: rows('tabs'),
+    actions: rows('actions'),
+    links: Object.fromEntries(rows('links').map((l) => [l.link, l.opens])),
+    labels: Object.fromEntries(rows('labels').map((l) => [l.key, l.text])),
+  };
+}
+
+const ICONS = {
+  home: '<path d="M3 11 12 4l9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z"/>',
+  tag: '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+  bag: '<path d="M5 8h14l-1 12H6Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+  person: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  pin: '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>',
+  chat: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/>',
+  star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9Z"/>',
+  gift: '<rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13M3 12h18M12 8S10 3 7.5 4 9 8 12 8Zm0 0s2-5 4.5-4S15 8 12 8Z"/>',
+};
+const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ICONS.star}</svg>`;
+
 async function show(builder, push = true) {
   if (push) stack.push(builder);
   backBtn.hidden = stack.length < 2;
-  view.innerHTML = '<div class="loading">Brewing something fresh…</div>';
+  view.innerHTML = `<div class="loading">${esc(label('loading'))}</div>`;
   const node = await builder();
   view.innerHTML = ''; view.append(node); view.scrollTop = 0;
   refreshLog();
 }
 // Opens a site fragment (e.g. a booking flow) in a bottom sheet via aem-embed.
-function openSheet(path, query = '', label = '') {
+function openSheet(path, query = '', title = '') {
   const screen = document.getElementById('screen');
   screen.querySelector('.sheet')?.remove();
   const src = `book.html?${new URLSearchParams({ origin: SITE, path, query: query.replace(/^\?/, '') })}`;
-  const sheet = h(`<div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(label)}">
+  const sheet = h(`<div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}">
     <div class="sheet-scrim"></div>
-    <div class="sheet-panel"><div class="sheet-bar"><span class="grip"></span><button class="sheet-close" aria-label="Close">✕</button></div>
-    <iframe title="${esc(label)}" src="${src}"></iframe></div></div>`);
+    <div class="sheet-panel"><div class="sheet-bar"><span class="grip"></span><button class="sheet-close" aria-label="${esc(label('close'))}">✕</button></div>
+    <iframe title="${esc(title)}" src="${src}"></iframe></div></div>`);
   const close = () => { sheet.classList.add('closing'); setTimeout(() => sheet.remove(), 250); };
   sheet.querySelector('.sheet-scrim').onclick = close;
   sheet.querySelector('.sheet-close').onclick = close;
   screen.append(sheet);
 }
 
-const open = (href, label = '') => {
-  if (!href) return;
-  const u = new URL(href, ORIGIN);
-  if (u.origin !== ORIGIN) return window.open(href);
+// A link is a screen id from the settings sheet, or a site path/URL.
+function open(link, title = '') {
+  if (!link) return;
+  if (settings.screens[link]) { show(screenBuilder(link)); return; }
+  const u = new URL(link, ORIGIN);
+  if (u.origin !== ORIGIN) { window.open(link); return; }
   const p = u.pathname;
-  // the booking page's form lives in a fragment; other fragment links (e.g. a campaign's
-  // sign-up flow) open the same way, like the site's modal does on the web
-  if (p === `${LOCALE}/booking`) { openSheet(`${LOCALE}/fragments/booking-experience`, u.search, label); return; }
-  if (p.startsWith(`${LOCALE}/fragments/`)) { openSheet(p, u.search, label); return; }
+  if (settings.links[p]) { openSheet(settings.links[p], u.search, title); return; }
+  if (p.startsWith(`${LOCALE}/fragments/`)) { openSheet(p, u.search, title); return; }
   show(async () => (p.includes('/offers/') ? renderPage(await plain(p)) : article(await plain(p), p)));
-};
+}
 
-// campaigns query index (/campaigns.json): every campaign fragment for this locale, newest first
-async function campaignList() {
-  try {
-    const { data = [] } = await json('/campaigns.json');
-    return data.filter((c) => c.path?.startsWith(`${LOCALE}/`)).sort((x, y) => (y.lastModified || 0) - (x.lastModified || 0));
-  } catch { return []; }
+// campaigns query index: every campaign fragment for this locale, newest first
+async function campaignList(source) {
+  const { data = [] } = await json(source);
+  return data.filter((c) => c.path?.startsWith(`${LOCALE}/`)).sort((x, y) => (y.lastModified || 0) - (x.lastModified || 0));
 }
 async function campaignFragment(path) {
   const frag = await plain(path);
@@ -198,96 +231,99 @@ async function campaignFragment(path) {
 
 const greeting = () => {
   const hr = new Date().getHours();
-  if (hr < 12) return 'Good morning';
-  return hr < 18 ? 'Good afternoon' : 'Good evening';
+  if (hr < 12) return label('greeting-morning');
+  return label(hr < 18 ? 'greeting-afternoon' : 'greeting-evening');
 };
+const titleBlock = (s, n) => (s.title ? h(`<div class="screen-title fade"><h1>${esc(s.title)}</h1>${s.subtitle ? `<p>${esc(s.subtitle.replace('{n}', n))}</p>` : ''}</div>`) : document.createDocumentFragment());
+const cardList = (src) => h(`<div class="offers fade" data-src="sheet ${esc(src)}"></div>`);
+const price = (o) => `<div class="price">${esc(o.priceLabel)}<small>${esc(o.period)}</small><span>›</span></div>`;
+const cardImg = (o) => (o.image ? `<img class="ofimg" loading="lazy" src="${media(o.image)}" alt="" onerror="this.remove()">` : '');
 
-const tabs = {
-  home: async () => {
+// Screen types. The settings sheet picks a type and a source for each screen.
+const TYPES = {
+  home: async (s) => {
     const f = document.createDocumentFragment();
-    // app-owned content (lives in the app)
     f.append(h(`<div class="app-native fade" data-src="app (native)">
-      <p class="hello">${greeting()}, Alex</p>
+      <p class="hello">${esc(greeting())}, Alex</p>
       <div class="loyalty"><div><span>Frescopa Circle</span><b>2,480</b><small>Velo points</small></div><div class="tier">Gold</div></div>
-      <div class="quick"><button data-go="offers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg><span>Offers</span></button><button data-go="houses"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>Houses</span></button><button data-go="events"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><span>Events</span></button><button data-go="help"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></svg><span>Help</span></button></div>
+      <div class="quick">${settings.actions.map((a) => `<button data-go="${esc(a.link)}">${icon(a.icon)}<span>${esc(a.label)}</span></button>`).join('')}</div>
     </div>`));
-    // EDS content: the campaign marked featured=true, else the most recently modified one
-    const list = await campaignList();
+    // the campaign marked featured=true, else the most recently modified one
+    const list = await campaignList(s.source);
     const featured = list.find((c) => String(c.featured).toLowerCase() === 'true') || list[0];
     if (featured) {
-      f.append(h('<h2 class="label">Featured</h2>'));
+      f.append(h(`<h2 class="label">${esc(label('featured'))}</h2>`));
       f.append(renderPage(await campaignFragment(featured.path)));
     }
     return f;
   },
-  offers: async () => {
-    // same sheet the website's catalog block reads: /en/us/data/offers.json
+  offers: async (s) => {
     const now = Date.now();
-    const data = (await json(`${LOCALE}/data/offers.json`)).data
+    const data = (await json(s.source)).data
       .filter((o) => !o.end || new Date(o.end).getTime() >= now)
       .sort((x, y) => (x.featured === 'true' ? -1 : 0) - (y.featured === 'true' ? -1 : 0)
         || new Date(x.end || 8.64e15) - new Date(y.end || 8.64e15));
     const f = document.createDocumentFragment();
-    f.append(h(`<div class="screen-title fade"><h1>Offers</h1><p>${data.length} ${data.length === 1 ? 'offer' : 'offers'} available</p></div>`));
-    const wrap = h('<div class="offers fade" data-src="sheet /en/us/data/offers.json"></div>');
+    f.append(titleBlock(s, data.length));
+    const wrap = cardList(s.source);
     data.forEach((o) => wrap.append(h(`<article class="offer ${o.featured === 'true' ? 'feat' : ''}" data-offer="${o.url}">
-      ${o.image ? `<img class="ofimg" loading="lazy" src="${media(o.image)}" alt="" onerror="this.remove()">` : ''}
+      ${cardImg(o)}
       <div class="top">${o.badge ? `<span class="badge">${esc(o.badge)}</span>` : '<span></span>'}<span class="aud">${esc(o.audience)}</span></div>
-      <h3>${esc(o.title)}</h3><p>${esc(o.summary)}</p>
-      <div class="price">${esc(o.priceLabel)}<small>${esc(o.period)}</small><span>›</span></div></article>`)));
+      <h3>${esc(o.title)}</h3><p>${esc(o.summary)}</p>${price(o)}</article>`)));
     f.append(wrap);
     return f;
   },
-  shop: async () => {
-    const { data } = await json(`${LOCALE}/data/products.json`);
+  products: async (s) => {
+    const { data } = await json(s.source);
     const f = document.createDocumentFragment();
-    f.append(h(`<div class="screen-title fade"><h1>Shop</h1><p>${data.length} plans and products</p></div>`));
-    const wrap = h('<div class="offers fade" data-src="sheet /en/us/data/products.json"></div>');
+    f.append(titleBlock(s, data.length));
+    const wrap = cardList(s.source);
     data.forEach((o, i) => wrap.append(h(`<article class="offer ${i === 0 ? 'feat' : ''}" data-href="${o.url}">
-      ${o.image ? `<img class="ofimg" loading="lazy" src="${media(o.image)}" alt="" onerror="this.remove()">` : ''}
+      ${cardImg(o)}
       <div class="top">${o.badge ? `<span class="badge">${esc(o.badge)}</span>` : `<span class="aud">${esc(o.group)}</span>`}<span class="aud">${esc(o.category)}</span></div>
       <h3>${esc(o.title)}</h3><p>${esc(o.summary)}</p>
       ${o.features ? `<ul class="feats">${o.features.split('|').slice(0, 3).map((x) => `<li>${esc(x.trim())}</li>`).join('')}</ul>` : ''}
-      <div class="price">${esc(o.priceLabel)}<small>${esc(o.period)}</small><span>›</span></div></article>`)));
+      ${price(o)}</article>`)));
     f.append(wrap);
     return f;
   },
-  houses: async () => {
-    const { data } = await json(`${LOCALE}/data/locations.json`);
+  locations: async (s) => {
+    const { data } = await json(s.source);
     const f = document.createDocumentFragment();
-    f.append(h(`<div class="screen-title fade"><h1>Frescopa Houses</h1><p>${data.length} locations</p></div>`));
-    f.append(list('', data.map((l) => ({ title: l.name, desc: `${l.street}, ${l.city} · ${l.hours} · ${l.services}`, badge: l.state || '◎', href: `${LOCALE}/booking?location=${encodeURIComponent(l.id)}` })), 'sheet /en/us/data/locations.json'));
+    f.append(titleBlock(s, data.length));
+    f.append(list('', data.map((l) => ({
+      title: l.name, desc: `${l.street}, ${l.city} · ${l.hours} · ${l.services}`, badge: l.state || '◎', href: fill(s['item link'], l),
+    })), `sheet ${s.source}`));
     return f;
   },
-  events: async () => renderPage(await plain(`${LOCALE}/experiences`)),
-  help: async () => renderPage(await plain(`${LOCALE}/support`)),
-  explore: async () => {
-    const data = (await index()).filter((d) => d.path.startsWith(LOCALE) && !/\/(nav|footer)$/.test(d.path));
-    const f = document.createDocumentFragment();
-    const groups = { 'Stories & guides': /stories|guides|explore|whats-new/, 'Products & services': /products|services|collections/, 'Experiences': /events|experiences|booking|locations/ };
-    Object.entries(groups).forEach(([g, re]) => {
-      const items = data.filter((d) => re.test(d.path)).map((d) => ({ title: d.title.split(' | ')[0], desc: d.description, img: d.image?.includes('default-meta') ? '' : d.image.replace(ORIGIN, BASE), href: d.path }));
-      if (items.length) f.append(rail(g, items, 'query-index.json'));
-    });
-    return f;
-  },
-  circle: async () => renderPage(await plain(`${LOCALE}/membership/benefits`)),
+  page: async (s) => renderPage(await plain(s.source)),
 };
+const screenBuilder = (id) => () => {
+  const s = settings.screens[id];
+  return TYPES[s.type](s);
+};
+
+function renderTabs() {
+  const nav = document.getElementById('tabs');
+  nav.innerHTML = settings.tabs.map((t, i) => `<button data-tab="${esc(t.screen)}" class="${i === 0 ? 'on' : ''}">${icon(t.icon)}${esc(t.label)}</button>`).join('');
+}
 document.getElementById('tabs').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
   document.querySelectorAll('.tabs button').forEach((x) => x.classList.toggle('on', x === b));
-  stack.length = 0; show(tabs[b.dataset.tab]);
+  stack.length = 0; show(screenBuilder(b.dataset.tab));
 });
 view.addEventListener('click', (e) => {
-  const go = e.target.closest('[data-go]'); if (go) { show(tabs[go.dataset.go]); return; }
+  const go = e.target.closest('[data-go]'); if (go) { open(go.dataset.go, go.textContent.trim()); return; }
   const off = e.target.closest('[data-offer]'); if (off) { const p = off.dataset.offer; show(async () => renderPage(await plain(p))); return; }
   const t = e.target.closest('[data-href]'); if (t?.dataset.href) open(t.dataset.href, t.textContent.trim());
 });
 backBtn.onclick = () => { stack.pop(); show(stack[stack.length - 1], false); };
 document.getElementById('xray').onchange = (e) => document.getElementById('screen').classList.toggle('xray', e.target.checked);
 document.getElementById('refresh').onclick = async () => {
+  await loadSettings();
+  renderTabs();
   await show(stack[stack.length - 1], false);
-  const t = h('<div class="toast">You’re all caught up ✓</div>'); document.getElementById('screen').append(t); setTimeout(() => t.remove(), 1800);
+  const t = h(`<div class="toast">${esc(label('synced'))}</div>`); document.getElementById('screen').append(t); setTimeout(() => t.remove(), 1800);
 };
 
 let lastShown = 0;
@@ -300,5 +336,7 @@ function refreshLog() {
 setInterval(async () => {
   try { const d = await index(); const latest = Math.max(...d.map((x) => x.lastModified)); if (window.lastMod && latest > window.lastMod) document.getElementById('refresh').click(); window.lastMod = latest; } catch { /* offline */ }
 }, 30000);
-show(tabs.home);
+await loadSettings();
+renderTabs();
+show(screenBuilder(settings.tabs[0].screen));
 if ('serviceWorker' in navigator && location.hostname !== 'localhost') navigator.serviceWorker.register('sw.js');

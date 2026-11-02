@@ -1,31 +1,26 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Frescopa</title>
-<meta name="theme-color" content="#ffffff">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Frescopa">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icons/icon-180.png">
-<link rel="preload" href="fonts/montserrat.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="app.css"></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Frescopa app · content from AEM Edge Delivery Services</title>
+  <link rel="icon" href="app/icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="demo.css">
+  <script type="module" src="demo.js"></script>
+</head>
 <body>
-<div class="stage">
-  <div class="phone"><div class="notch"></div>
-    <div class="screen" id="screen">
-      <header class="bar"><button id="back" class="back" hidden aria-label="Back">‹</button><span class="logo">frescopa</span><span class="avatar" aria-hidden="true">A</span></header>
-      <main id="view"></main>
-      <nav class="tabs" id="tabs"></nav>
+  <main class="demo">
+    <div class="phone">
+      <iframe id="app" src="app/" title="Frescopa app"></iframe>
     </div>
-  </div>
-<section class="story">
-    <div class="panel">
-      <div class="panel-head"><span class="dot"></span> Live from AEM <button id="refresh">↻ Sync now</button></div>
-      <ul id="reqlog"></ul>
-    </div>
-    <label class="toggle"><input type="checkbox" id="xray"> X-ray: show content sources</label>
-  </section>
-</div>
-<script type="module" src="app.js"></script>
-</body></html>
+    <aside class="panel" aria-labelledby="panel-title">
+      <div class="panel-head">
+        <h1 id="panel-title">Live from AEM</h1>
+        <button id="reload" type="button">Reload app</button>
+      </div>
+      <p>Content requests the app makes to the Frescopa site.</p>
+      <ol id="requests"></ol>
+    </aside>
+  </main>
+</body>
+</html>

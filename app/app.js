@@ -1,5 +1,5 @@
 import {
-  LOCALE, SITE, getWorkbook, loadEmbed,
+  EXPERIENCE, LOCAL, LOCALE, PREVIEW, SITE, getExperience, loadEmbed,
 } from './eds.js';
 import { el, icon } from './ui.js';
 import { closeSheet, openSheet } from './sheet.js';
@@ -9,93 +9,105 @@ import products from './screens/products.js';
 import locations from './screens/locations.js';
 import page from './screens/page.js';
 
-// Screen layouts the app knows. The settings sheet decides which screen uses which.
-const LAYOUTS = {
-  home, offers, products, locations, page,
+// The app's screens. Layout and data source are code; their text, the tabs and the
+// quick actions come from the app document authors edit in DA (Frescopa Studio).
+const SCREENS = {
+  home: { layout: home },
+  offers: { layout: offers, source: `${LOCALE}/data/offers.json` },
+  shop: { layout: products, source: `${LOCALE}/data/products.json` },
+  houses: {
+    layout: locations,
+    source: `${LOCALE}/data/locations.json`,
+    itemLink: `${LOCALE}/booking?location={id}`,
+  },
 };
+
+// Frescopa Studio is a DA app: DA serves it from its preview host for the site's
+// branch (and from `aem up` on localhost:3000 with ?ref=local while developing it).
+const STUDIO_ORIGIN = /^https:\/\/[a-z0-9-]+--frescopa--kunwarsaluja\.preview\.da\.live$/;
+const fromStudio = (event) => event.source === window.parent && window.parent !== window
+  && (STUDIO_ORIGIN.test(event.origin) || (LOCAL && event.origin === 'http://localhost:3000'));
 
 const view = document.getElementById('view');
 const backButton = document.getElementById('back');
 const tabBar = document.getElementById('tabs');
 const trail = [];
-let settings;
+let experience;
+let latestRender = 0;
 
-/**
- * App settings, authored in DA: /en/us/data/app.json
- * screens: screen, type, title, subtitle, source, item link
- * tabs: label, screen, icon · actions: label, link, icon
- * links: link, opens · labels: key, text
- */
-async function loadSettings() {
-  const book = await getWorkbook(`${LOCALE}/data/app.json`);
-  settings = {
-    screens: new Map(book.screens.map((s) => [s.screen, s])),
-    tabs: book.tabs,
-    actions: book.actions,
-    links: new Map(book.links.map((l) => [l.link, l.opens])),
-    labels: Object.fromEntries(book.labels.map((l) => [l.key, l.text])),
-  };
+const label = (key) => experience.labels?.[key] ?? '';
+
+/** An app screen (its title and subtitle come from content), or a site page shown in the app. */
+function screenFor(opens) {
+  if (SCREENS[opens]) {
+    const { title, subtitle } = experience[opens] ?? {};
+    return { ...SCREENS[opens], title, subtitle };
+  }
+  return { layout: page, source: opens };
 }
 
-const label = (key) => settings.labels[key] ?? '';
-
-async function render(entry) {
+async function render(opens) {
+  // a slower, older render must not replace a newer screen
+  const id = latestRender + 1;
+  latestRender = id;
   backButton.hidden = trail.length < 2;
   view.replaceChildren(el('p.status', { role: 'status' }, label('loading')));
   try {
-    const screen = entry.screen
-      ? settings.screens.get(entry.screen)
-      : { type: 'page', source: entry.page };
-    view.replaceChildren(await LAYOUTS[screen.type](screen, { label, actions: settings.actions }));
+    const screen = screenFor(opens);
+    const content = await screen.layout(screen, { label, experience });
+    if (id !== latestRender) return;
+    view.replaceChildren(content);
     view.scrollTo(0, 0);
   } catch (error) {
+    if (id !== latestRender) return;
     console.error(error);
     const retry = el('button.button', { type: 'button' }, label('retry'));
-    retry.addEventListener('click', () => render(entry));
+    retry.addEventListener('click', () => render(opens));
     view.replaceChildren(el('div.status', { role: 'alert' }, el('p', {}, label('error')), retry));
   }
 }
 
-function go(entry, { fromTab = false } = {}) {
-  if (fromTab) {
-    trail.length = 0;
-    tabBar.querySelectorAll('button').forEach((b) => {
-      if (b.dataset.screen === entry.screen) b.setAttribute('aria-current', 'page');
-      else b.removeAttribute('aria-current');
-    });
-  }
-  trail.push(entry);
-  render(entry);
+function markTab() {
+  tabBar.querySelectorAll('button').forEach((b) => {
+    if (b.dataset.opens === trail[0]) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  });
+}
+
+function go(opens, { fromTab = false } = {}) {
+  if (fromTab) trail.length = 0;
+  trail.push(opens);
+  markTab();
+  render(opens);
 }
 
 /**
  * Opens a link from a screen or from embedded site content.
- * - a screen id from the settings sheet → that screen
- * - a path listed under links, or any fragment → bottom sheet (aem-embed)
- * - a path a screen already shows → that screen
+ * - an app screen → that screen
+ * - a page listed under "Open in a bottom sheet", or any fragment → bottom sheet (aem-embed)
  * - any other site page → in-app page (aem-embed)
  * - another site → the browser
  */
-function open(link, name = '') {
-  if (settings.screens.has(link)) {
+function open(link, name = '', { fromTab = false } = {}) {
+  if (SCREENS[link]) {
     closeSheet();
-    go({ screen: link });
+    go(link, { fromTab });
     return;
   }
   const url = new URL(link, SITE);
   if (url.origin !== SITE) {
-    window.open(url.href, '_blank', 'noopener');
+    if (/^https?:$/.test(url.protocol)) window.open(url.href, '_blank', 'noopener');
     return;
   }
   const path = url.pathname;
-  const sheet = settings.links.get(path) ?? (path.startsWith(`${LOCALE}/fragments/`) ? path : null);
+  const sheet = experience.sheets?.find((s) => s.page === path)?.fragment
+    ?? (path.startsWith(`${LOCALE}/fragments/`) ? path : null);
   if (sheet) {
     openSheet(sheet, url.search.slice(1), { name, closeLabel: label('close') });
     return;
   }
   closeSheet();
-  const screen = [...settings.screens.values()].find((s) => s.source === path);
-  go(screen ? { screen: screen.screen } : { page: path });
+  go(path, { fromTab });
 }
 
 // One click handler for app links and links inside embedded site content.
@@ -115,17 +127,46 @@ document.addEventListener('click', (event) => {
 
 backButton.addEventListener('click', () => {
   trail.pop();
+  markTab();
   render(trail[trail.length - 1]);
 });
 
 function renderChrome() {
   backButton.replaceChildren(icon('back'));
   backButton.setAttribute('aria-label', label('back'));
-  tabBar.replaceChildren(...settings.tabs.map((tab) => {
-    const button = el('button', { type: 'button', 'data-screen': tab.screen }, icon(tab.icon), el('span', {}, tab.label));
-    button.addEventListener('click', () => go({ screen: tab.screen }, { fromTab: true }));
+  tabBar.replaceChildren(...experience.tabs.map((tab) => {
+    const button = el('button', { type: 'button', 'data-opens': tab.opens }, icon(tab.icon), el('span', {}, tab.label));
+    button.addEventListener('click', () => open(tab.opens, tab.label, { fromTab: true }));
     return button;
   }));
+  markTab();
+}
+
+function start() {
+  renderChrome();
+  open(experience.tabs[0].opens, experience.tabs[0].label, { fromTab: true });
+}
+
+/**
+ * In preview, Frescopa Studio sends the author's unsaved changes so the app updates as
+ * they type. Studio's draft also starts the app when the document isn't previewed yet.
+ */
+function listenToStudio() {
+  window.addEventListener('message', (event) => {
+    if (!fromStudio(event) || event.data?.type !== 'frescopa-experience') return;
+    // a draft without tabs is mid-edit (the schema requires them): keep showing the last one
+    if (!event.data.experience.tabs?.length) return;
+    const first = !experience;
+    experience = event.data.experience;
+    if (first) {
+      start();
+      return;
+    }
+    renderChrome();
+    render(trail[trail.length - 1]);
+  });
+  // tell Studio the app is ready for changes (no data in this message)
+  window.parent.postMessage({ type: 'frescopa-app-ready' }, '*');
 }
 
 // When shown inside the demo page, report each content request so it can list them.
@@ -133,10 +174,15 @@ function reportRequests() {
   if (window.parent === window) return;
   new PerformanceObserver((list) => {
     list.getEntries()
-      .filter((e) => e.name.startsWith(SITE) && /\.(json|plain\.html)(\?|$)/.test(e.name))
-      .forEach((e) => window.parent.postMessage({
+      .map((e) => {
+        if (e.name.startsWith(EXPERIENCE)) return { e, path: `${LOCALE}/app/experience (app document)` };
+        if (e.name.startsWith(SITE) && /\.(json|plain\.html)(\?|$)/.test(e.name)) return { e, path: e.name.slice(SITE.length) };
+        return null;
+      })
+      .filter(Boolean)
+      .forEach(({ e, path }) => window.parent.postMessage({
         type: 'content-request',
-        path: e.name.slice(SITE.length),
+        path,
         status: e.responseStatus,
         ms: Math.round(e.duration),
       }, window.location.origin));
@@ -145,8 +191,20 @@ function reportRequests() {
 
 reportRequests();
 loadEmbed();
-await loadSettings();
-renderChrome();
-go({ screen: settings.tabs[0].screen }, { fromTab: true });
+if (PREVIEW) listenToStudio();
+try {
+  const saved = await getExperience();
+  // in preview, Studio's draft may have arrived first: it's newer, so keep it
+  if (!experience) {
+    experience = saved;
+    start();
+  }
+} catch (error) {
+  console.error(error);
+  if (!experience) {
+    view.replaceChildren(document.getElementById('start-error').content.cloneNode(true));
+    view.querySelector('button').addEventListener('click', () => window.location.reload());
+  }
+}
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');

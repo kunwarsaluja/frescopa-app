@@ -1,4 +1,5 @@
-// Caches the app's own files so it starts offline. Content always comes fresh from the site.
+// Caches the app's own files so it opens quickly and its shell works offline.
+// Content always comes fresh from AEM (offline, the app shows its can't-load screen).
 const CACHE = 'frescopa-app-v1';
 const FILES = [
   './', 'index.html', 'app.css', 'app.js', 'eds.js', 'ui.js', 'sheet.js',
@@ -21,8 +22,10 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
   event.respondWith(fetch(event.request)
     .then((resp) => {
-      const copy = resp.clone();
-      caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+      if (resp.ok) {
+        const copy = resp.clone();
+        caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+      }
       return resp;
     })
     .catch(() => caches.match(event.request)));

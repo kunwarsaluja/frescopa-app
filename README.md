@@ -15,13 +15,12 @@ A small installable web app (PWA) for Frescopa. It has no content of its own: ev
 | Offers | `/en/us/data/offers.json` (ended offers hidden, featured first, then ending soonest) |
 | Shop | `/en/us/data/products.json` |
 | Houses | `/en/us/data/locations.json` |
-| Home, featured campaign | `/campaigns.json` query index: the campaign marked `featured`, else the most recently changed |
 
 **Site experiences through [aem-embed](https://www.aem.live/docs/aem-embed).** Where the site already designs the experience, the app shows it with `<aem-embed>` and the site's own blocks render it.
 
 | Where | Embedded |
 |---|---|
-| Home | the featured campaign fragment |
+| Home | the announcement and featured campaign fragments chosen in the app document |
 | Book a visit, a House, the trial campaign button | the booking fragments, in a bottom sheet |
 | Events, Help, any other site page the app links to | the page itself |
 
@@ -29,19 +28,23 @@ Links inside embedded content are handled by the app: fragments open in the bott
 
 ## Authoring the app
 
-The app's structure is a sheet in DA: [`/en/us/data/app.json`](https://da.live/sheet#/kunwarsaluja/frescopa/en/us/data/app). Edit it, Preview and Publish; the app picks it up on its next start. No deploy.
+Authors run the app from one document in DA: [`/en/us/app/experience`](https://da.live/form#/kunwarsaluja/frescopa/en/us/app/experience). It's [structured content](https://www.aem.live/docs/ew/administering/structured-content) with the schema `frescopa-app`, and the app reads it as JSON:
 
-| Sheet | Columns | Controls |
-|---|---|---|
-| `shared-screens` | screen, type, title, subtitle, source, item link | What each screen shows. `type`: `home`, `offers`, `products`, `locations` or `page`. `subtitle` can use `{n}`. `item link` can use row fields, e.g. `/en/us/booking?location={id}` |
-| `shared-tabs` | label, screen, icon | Bottom tabs, in order |
-| `shared-actions` | label, link, icon | Home quick actions. `link` is a screen or any site path |
-| `shared-links` | link, opens | Site paths that open a fragment in the bottom sheet, e.g. `/en/us/booking` → `/en/us/fragments/booking-experience` |
-| `shared-labels` | key, text | UI text |
+- live: `https://da-sc.adobeaem.workers.dev/live/kunwarsaluja/frescopa/en/us/app/experience`
+- preview: the same URL with `preview`, used when the app is opened with `?preview`
 
-Icons: `home`, `tag`, `bag`, `person`, `pin`, `calendar`, `clock`, `chat`. EDS only publishes sheets whose names start with `shared-`.
+Edit it in **Frescopa Studio**, a DA app in the site repo: `https://da.live/app/kunwarsaluja/frescopa/tools/frescopa-studio/frescopa-studio`. Studio shows the form next to the app on a phone; the phone updates as you type. Changes save to DA as you type. Preview updates the app's preview mode; Publish updates the live app on its next start. DA's own form editor opens the same document.
 
-A new screen type (a new layout) is the only change that needs code.
+| Field | Controls |
+|---|---|
+| Announcement | Path of an announcement fragment shown at the top of Home, e.g. `/en/us/fragments/announcements/member-week` (a `campaign` block works well). Empty hides it |
+| Featured campaign | Path of the campaign fragment shown on Home |
+| Quick actions, Bottom tabs | Label, icon and what it opens: an app screen (`home`, `offers`, `shop`, `houses`) or a site page path |
+| Offers, Shop, Houses screen | Title and subtitle (`{n}` is the number of items) |
+| Open in a bottom sheet | Links to a page that open a fragment over the app instead, e.g. `/en/us/booking` → `/en/us/fragments/booking-experience` |
+| App text | Greetings, labels and messages |
+
+Icons: `home`, `tag`, `bag`, `person`, `pin`, `calendar`, `clock`, `chat`. A new kind of screen (a new layout) or icon is the only change that needs code.
 
 ## Code
 
@@ -51,8 +54,8 @@ No build step, no runtime dependencies.
 index.html, demo.*   demo page: the app in a phone frame + content request list
 app/
   index.html         the app
-  app.js             settings, tabs, navigation, link handling
-  eds.js             everything that talks to the site: JSON, sheets, aem-embed
+  app.js             app document, tabs, navigation, link handling, drafts from Studio
+  eds.js             everything that talks to AEM: the app document, JSON, aem-embed
   sheet.js           bottom sheet for embedded fragments
   ui.js              el(), icons, format()
   screens/           one file per screen type

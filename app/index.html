@@ -17,6 +17,13 @@
     <span class="logo">frescopa</span>
   </header>
   <main id="view"></main>
+  <!-- shown when the app document can't load (its labels come from that document) -->
+  <template id="start-error">
+    <div class="status" role="alert">
+      <p>Frescopa can’t load right now.</p>
+      <button class="button" type="button">Try again</button>
+    </div>
+  </template>
   <nav class="tabs" id="tabs"></nav>
 </body>
 </html>

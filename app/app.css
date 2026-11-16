@@ -140,6 +140,8 @@ h1 {
   margin-bottom: 16px;
 }
 
+.announcement { margin-bottom: 14px; }
+
 .member {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -205,6 +207,7 @@ h1 {
 
 .action svg { color: var(--flame); }
 
+.announcement aem-embed,
 .featured aem-embed {
   display: block;
   border-radius: var(--radius);

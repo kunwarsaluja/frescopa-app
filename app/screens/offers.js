@@ -4,11 +4,11 @@ import card from './card.js';
 
 const time = (date, empty) => (date ? new Date(date).getTime() : empty);
 
-/** Offers that haven't ended: featured first, then the ones ending soonest. */
+/** Offers running now: featured first, then the ones ending soonest. */
 function current(rows) {
   const now = Date.now();
   return rows
-    .filter((o) => time(o.end, Infinity) >= now)
+    .filter((o) => time(o.start, -Infinity) <= now && time(o.end, Infinity) >= now)
     .sort((a, b) => (b.featured === 'true') - (a.featured === 'true')
       || time(a.end, Infinity) - time(b.end, Infinity));
 }

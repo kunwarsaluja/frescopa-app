@@ -33,7 +33,7 @@ Authors run the app from one document in DA: [`/en/us/app/experience`](https://d
 - live: `https://da-sc.adobeaem.workers.dev/live/kunwarsaluja/frescopa/en/us/app/experience`
 - preview: the same URL with `preview`, used when the app is opened with `?preview`
 
-Edit it in **Frescopa Studio**, a DA app in the site repo: `https://da.live/app/kunwarsaluja/frescopa/tools/frescopa-studio/frescopa-studio`. Studio shows the form next to the app on a phone; the phone updates as you type. Changes save to DA as you type. Preview updates the app's preview mode; Publish updates the live app on its next start. DA's own form editor opens the same document.
+Edit it in **Frescopa Studio**, a DA app in the site repo: `https://da.live/app/kunwarsaluja/frescopa/tools/frescopa-studio/frescopa-studio#/en/us/app/experience`. Studio shows the form next to the app on a phone, which updates as you type; it finds the app through the `previews` sheet of the DA site config (`…/app/?{tier}`). Changes save to DA as you type. Preview updates the app's preview mode; Publish updates the live app on its next start. DA's own form editor opens the same document.
 
 | Field | Controls |
 |---|---|

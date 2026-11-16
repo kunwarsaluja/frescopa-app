@@ -149,15 +149,17 @@ function start() {
 
 /**
  * In preview, Frescopa Studio sends the author's unsaved changes so the app updates as
- * they type. Studio's draft also starts the app when the document isn't previewed yet.
+ * they type: { type: 'structured-content', path, data } for the document it edits.
+ * Studio's draft also starts the app when the document isn't previewed yet.
  */
 function listenToStudio() {
   window.addEventListener('message', (event) => {
-    if (!fromStudio(event) || event.data?.type !== 'frescopa-experience') return;
+    const { type, path, data } = event.data ?? {};
+    if (!fromStudio(event) || type !== 'structured-content' || path !== `${LOCALE}/app/experience`) return;
     // a draft without tabs is mid-edit (the schema requires them): keep showing the last one
-    if (!event.data.experience.tabs?.length) return;
+    if (!data?.tabs?.length) return;
     const first = !experience;
-    experience = event.data.experience;
+    experience = data;
     if (first) {
       start();
       return;
@@ -166,7 +168,7 @@ function listenToStudio() {
     render(trail[trail.length - 1]);
   });
   // tell Studio the app is ready for changes (no data in this message)
-  window.parent.postMessage({ type: 'frescopa-app-ready' }, '*');
+  window.parent.postMessage({ type: 'structured-content-ready' }, '*');
 }
 
 /** The demo page (same origin) that frames the app, if any; not Studio. */

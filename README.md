@@ -1,74 +1,74 @@
 # Frescopa App
 
-A small installable web app (PWA) that shows **content reuse across channels**: everything it displays comes live from the Frescopa site on [AEM Edge Delivery Services](https://www.aem.live/), with no CMS of its own.
+A small installable web app (PWA) for Frescopa. It has no content of its own: everything comes from the Frescopa site on [AEM Edge Delivery Services](https://www.aem.live/), authored once in Document Authoring.
 
-- **App: https://kunwarsaluja.github.io/frescopa-app/** (open on a phone and use Add to Home Screen to install)
-- Site: https://main--frescopa--kunwarsaluja.aem.live/en/us/
-- Site repo: [kunwarsaluja/frescopa](https://github.com/kunwarsaluja/frescopa)
+- App: https://kunwarsaluja.github.io/frescopa-app/app/ (open on a phone, then Add to Home Screen)
+- Demo page (app in a phone frame, plus the content requests it makes): https://kunwarsaluja.github.io/frescopa-app/
+- Site: https://main--frescopa--kunwarsaluja.aem.live/en/us/ ([repo](https://github.com/kunwarsaluja/frescopa))
 
-## What comes from where
+## Two ways the app reuses site content
 
-| App screen | EDS source |
+**Native screens from structured data.** The app reads JSON that the site already publishes and draws its own UI.
+
+| Screen | Source |
 |---|---|
-| Home → featured offer | the campaign fragment marked `featured: true` in the `/campaigns.json` query index (if none is featured, the most recently modified campaign) |
-| Offers | all offers from `/en/us/data/offers.json`; tapping an offer opens its page (`.plain.html`) |
-| Houses | sheet `/en/us/data/locations.json` |
-| Shop | sheet `/en/us/data/products.json` |
-| Events | events block on `/en/us/experiences.plain.html` |
-| Help | `/en/us/support.plain.html` |
-| Circle | `/en/us/membership/benefits.plain.html` |
+| Offers | `/en/us/data/offers.json` (ended offers hidden, featured first, then ending soonest) |
+| Shop | `/en/us/data/products.json` |
+| Houses | `/en/us/data/locations.json` |
 
-Greeting, points card and quick actions are app-owned (not from EDS).
+**Site experiences through [aem-embed](https://www.aem.live/docs/aem-embed).** Where the site already designs the experience, the app shows it with `<aem-embed>` and the site's own blocks render it.
 
-### Booking with aem-embed
+| Where | Embedded |
+|---|---|
+| Home | the announcement and featured campaign fragments chosen in the app document |
+| Book a visit, a House, the trial campaign button | the booking fragments, in a bottom sheet |
+| Events, Help, any other site page the app links to | the page itself |
 
-Links to `/en/us/booking` (House rows, events) and to fragments (for example the trial campaign's "Start your free trial" → `/en/us/fragments/start-trial`) open in a bottom sheet, the way the website opens fragment links in a modal. The sheet doesn't rebuild the form: it shows the site's own `booking` block (fragment `/en/us/fragments/booking-experience`, the same one the booking page uses) through [aem-embed](https://www.aem.live/docs/aem-embed), so steps, options, validation and consent text are authored in DA and styled by the site. Prefill values (`location`, `experience`) are passed to the block through the embed host's `data-query`.
+Links inside embedded content are handled by the app: fragments open in the bottom sheet, site pages open in the app, other sites open in the browser.
 
-`book.html` hosts the embed in its own frame so the block lays out for the sheet's width. Append `?site=<origin>` to the app URL to embed from another environment (for example a branch preview or a local `aem up` on `http://localhost:3000`).
+## Authoring the app
 
-The app reads `.plain.html` (pages and fragments without site chrome) and JSON sheets, then maps EDS blocks (`hero`, `campaign`, `cards`, `events`, `stats`, `offer-summary`, `faq`…) to native-style components. Turn on **X-ray** on desktop to see which block or sheet each component came from.
+Authors run the app from one document in DA: [`/en/us/app/experience`](https://da.live/form#/kunwarsaluja/frescopa/en/us/app/experience). It's [structured content](https://www.aem.live/docs/ew/administering/structured-content) with the schema `frescopa-app`, and the app reads it as JSON:
 
-The site sends `Access-Control-Allow-Origin: *`, so the app calls EDS directly from the browser.
+- live: `https://da-sc.adobeaem.workers.dev/live/kunwarsaluja/frescopa/en/us/app/experience`
+- preview: the same URL with `preview`, used when the app is opened with `?preview`
 
-Known gap: sheet image paths like `/media/com-sun.jpg` are redirects that resolve only on `.aem.page` today, so those images load from preview.
+Edit it in **Frescopa Studio**, a DA app in the site repo: `https://da.live/app/kunwarsaluja/frescopa/tools/frescopa-studio/frescopa-studio`. Studio shows the form next to the app on a phone; the phone updates as you type. Changes save to DA as you type. Preview updates the app's preview mode; Publish updates the live app on its next start. DA's own form editor opens the same document.
 
-## Authoring the app (no deploy needed)
+| Field | Controls |
+|---|---|
+| Announcement | Path of an announcement fragment shown at the top of Home, e.g. `/en/us/fragments/announcements/member-week` (a `campaign` block works well). Empty hides it |
+| Featured campaign | Path of the campaign fragment shown on Home |
+| Quick actions, Bottom tabs | Label, icon and what it opens: an app screen (`home`, `offers`, `shop`, `houses`) or a site page path |
+| Offers, Shop, Houses screen | Title and subtitle (`{n}` is the number of items) |
+| Open in a bottom sheet | Links to a page that open a fragment over the app instead, e.g. `/en/us/booking` → `/en/us/fragments/booking-experience` |
+| App text | Greetings, labels and messages |
 
-The app's structure is a sheet in DA: [`/en/us/data/app.json`](https://da.live/sheet#/kunwarsaluja/frescopa/en/us/data/app). Edit it, then Preview and Publish; the app picks it up on the next load or **Sync now**. Sheet tabs must be named `shared-…` for EDS to publish them.
+Icons: `home`, `tag`, `bag`, `person`, `pin`, `calendar`, `clock`, `chat`. A new kind of screen (a new layout) or icon is the only change that needs code.
 
-| Tab | Columns | What it controls |
-|---|---|---|
-| `shared-screens` | screen, type, title, subtitle, source, item link | What each screen shows. `type` is one of `home`, `offers`, `products`, `locations`, `page`. `source` is the sheet, index or page it reads. `subtitle` can use `{n}` (item count). `item link` can use row fields, e.g. `/en/us/booking?location={id}` |
-| `shared-tabs` | label, screen, icon | Bottom tabs, in order |
-| `shared-actions` | label, link, icon | Home quick actions. `link` is a screen id or any site path or fragment |
-| `shared-links` | link, opens | Site paths the app opens differently, e.g. `/en/us/booking` → `/en/us/fragments/booking-experience` |
-| `shared-labels` | key, text | UI text: `featured`, `greeting-morning`, `greeting-afternoon`, `greeting-evening`, `loading`, `synced`, `back`, `close` |
+## Code
 
-Icons: `home`, `tag`, `bag`, `person`, `pin`, `calendar`, `chat`, `star`, `gift`.
+No build step, no runtime dependencies.
 
-Examples of authoring changes: point Help at another page, add a "Book a visit" quick action (`link`: `/en/us/booking`), rename a tab, reorder tabs, show a new page as a screen. A new screen **type** (a new layout) is the only thing that needs a code change.
-
-## Run locally
-
-No build step, no dependencies.
-
-```sh
-python3 -m http.server 4321   # or any static server
-open http://localhost:4321
+```
+index.html, demo.*   demo page: the app in a phone frame + content request list
+app/
+  index.html         the app
+  app.js             app document, tabs, navigation, link handling, drafts from Studio
+  eds.js             everything that talks to AEM: the app document, JSON, aem-embed
+  sheet.js           bottom sheet for embedded fragments
+  ui.js              el(), icons, format()
+  screens/           one file per screen type
+  sw.js              caches the app's own files; content always comes from the site
 ```
 
-`server.mjs` is an optional zero-dependency Node server that also proxies EDS (`node server.mjs`, then open `/?proxy`). Only needed if CORS is ever turned off on the site.
+```sh
+npm install
+npm run lint
+npm start            # http://localhost:4321
+```
 
-## Desktop vs phone
+## Site requirements
 
-- Desktop: phone frame with the live request log, Sync now and X-ray beside it.
-- Phone or installed (Add to Home Screen): full-screen app. A service worker caches the app shell; EDS content is always fetched fresh (network-first, cached copy only when offline).
-
-## Hosting
-
-GitHub Pages from `main` (root). Every push redeploys.
-
-## Next steps
-
-- Wrap with Capacitor for iOS/Android store builds, or build native clients against the same endpoints.
-- Push notifications when an offer is published.
+- `access-control-allow-origin: *` on the site (headers config, path `/**`), so the app can read content and load `aem-embed` and block code.
+- Site styles declare design tokens on `:root, :host`, and the booking block supports embedding ([frescopa#7](https://github.com/kunwarsaluja/frescopa/pull/7)).

@@ -1,0 +1,19 @@
+{
+  "name": "frescopa-app",
+  "private": true,
+  "type": "module",
+  "description": "Frescopa PWA that reuses content from AEM Edge Delivery Services",
+  "scripts": {
+    "lint:js": "eslint .",
+    "lint:css": "stylelint \"**/*.css\"",
+    "lint": "npm run lint:js && npm run lint:css",
+    "start": "npx -y http-server -p 4321 -c-1 ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "eslint": "^9.15.0",
+    "globals": "^15.0.0",
+    "stylelint": "17.3.0",
+    "stylelint-config-standard": "40.0.0"
+  }
+}

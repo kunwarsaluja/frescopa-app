@@ -169,9 +169,18 @@ function listenToStudio() {
   window.parent.postMessage({ type: 'frescopa-app-ready' }, '*');
 }
 
+/** The demo page (same origin) that frames the app, if any; not Studio. */
+function demoPage() {
+  try {
+    return window.parent !== window && window.parent.location.origin === window.location.origin;
+  } catch {
+    return false; // a parent on another origin, e.g. Frescopa Studio
+  }
+}
+
 // When shown inside the demo page, report each content request so it can list them.
 function reportRequests() {
-  if (window.parent === window) return;
+  if (!demoPage()) return;
   new PerformanceObserver((list) => {
     list.getEntries()
       .map((e) => {
